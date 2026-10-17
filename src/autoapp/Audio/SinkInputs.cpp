@@ -80,6 +80,7 @@ QList<SinkInput> parseSinkInputs(const QByteArray& sinkInputsJson, const QByteAr
         const QJsonObject properties = object.value("properties").toObject();
         SinkInput input;
         input.index = quint32(number(object.value("index")));
+        input.sink = quint32(number(object.value("sink")));
         // "volume": {"front-left": {"value": 65536, "value_percent": "100%", ...}, ...}, in channel map order
         const QJsonObject volume = object.value("volume").toObject();
         const QStringList channels = object.value("channel_map").toString().split(',', Qt::SkipEmptyParts);

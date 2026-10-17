@@ -116,10 +116,15 @@ source `file /opt/openhu-plugins`.
 
 - Built in instead of a plugin: `bt::BluetoothManager` (adapter, agent, pairing incl. PIN for old radios,
   search, devices) is shared by wireless AA and the radio; `bt::CarAudio` connects the radio
-  (again every 20 s, the radio comes on with the ignition), makes it the default output through `pactl` and
-  restores the previous one on disconnect/quit. Sink names: new PipeWire `bluez_output.AA:BB:…`, old with `_`.
-- AVRCP: own MPRIS player at BlueZ (`Media1.RegisterPlayer`), keys → actions; while a call rings, play/pause
-  answers it, during the call it hangs up; the display shows title/artist or the caller.
+  (again every 20 s, the radio comes on with the ignition) and asks it for A2DP (`ConnectProfile`, radios connect
+  hands-free first); `audio::OutputRouter` switches the card to A2DP, makes the sink the default output and moves
+  the playing streams to it through `pactl`, and back on disconnect, car audio off and quit. Car audio off or
+  another radio chosen leaves the device connected; only "forget" unpairs it. Sink names: new PipeWire
+  `bluez_output.AA:BB:…`, old with `_`.
+- AVRCP: own MPRIS player at BlueZ (`Media1.RegisterPlayer`), keys → actions (`bt::CallButtons`): while a call
+  rings, play/play-pause answers it (from 2 s on); in a call pause/stop/play-pause hang up only once the call lasted
+  5 s and its state did not change for 2 s (radios send pause/stop themselves when they switch to the phone, which
+  ended every call); the display shows title/artist or the caller.
 - Volume on the radio: AVRCP Absolute Volume through PipeWire → default output → `audio.volume`.
 - Call audio goes to the radio by A2DP, the microphone is on the OpenHU device (decision: no HFP gateway).
 - Status bar: Bluetooth symbol while the car radio is connected (the phone has its own symbol).

@@ -499,6 +499,14 @@ void BluetoothManager::connectDevice(const QString& address)
     }
 }
 
+void BluetoothManager::connectProfile(const QString& address, const QString& uuid)
+{
+    if(!adapterPath_.isEmpty())
+    {
+        bluez::callAsync(this->pathOf(address), bluez::cDevice, "ConnectProfile", {uuid});
+    }
+}
+
 void BluetoothManager::disconnectDevice(const QString& address)
 {
     if(!adapterPath_.isEmpty())

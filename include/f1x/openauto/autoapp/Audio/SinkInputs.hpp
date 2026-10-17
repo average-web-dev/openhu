@@ -34,6 +34,7 @@ namespace audio
 struct SinkInput
 {
     quint32 index = 0;
+    quint32 sink = 0;      // index of the sink it plays on
     // raw volume per channel (65536 = 100 %)
     QList<quint32> volumes;
     // application.process.id of the stream, else of its client; 0 if unknown

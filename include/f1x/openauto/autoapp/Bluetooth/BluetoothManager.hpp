@@ -76,6 +76,8 @@ public:
     Q_INVOKABLE void startSearch(int seconds = 30);
     Q_INVOKABLE void stopSearch();
     Q_INVOKABLE void connectDevice(const QString& address);
+    // one profile of a connected device (BlueZ ConnectProfile), e.g. A2DP of a car radio that connected hands-free only
+    void connectProfile(const QString& address, const QString& uuid);
     Q_INVOKABLE void disconnectDevice(const QString& address);
     Q_INVOKABLE void removeDevice(const QString& address);
 

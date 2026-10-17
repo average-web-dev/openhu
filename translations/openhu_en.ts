@@ -1297,7 +1297,7 @@
     </message>
     <message id="caraudio.connected_but_no_audio">
         <source></source>
-        <translation>Connected, but no audio output found (A2DP active in PipeWire/PulseAudio?).</translation>
+        <translation>Connected, but no audio output yet (A2DP). If it does not start, choose Bluetooth audio on the radio.</translation>
     </message>
     <message id="caraudio.call">
         <source></source>

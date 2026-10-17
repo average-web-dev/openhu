@@ -65,12 +65,14 @@ Useful tools: `nmcli connection show --active`, `journalctl -u NetworkManager` (
 
 | Message / symptom | Cause, fix |
 |---|---|
-| "Verbunden, aber keine Audioausgabe gefunden" | A2DP not available in the audio server: PipeWire needs its Bluetooth support (Debian `libspa-0.2-bluetooth`, `wireplumber`), PulseAudio `pulseaudio-module-bluetooth`; `pactl list short sinks` must list `bluez_output…` |
+| "Connected, but no audio output yet (A2DP)" | Many car radios connect hands-free (HFP) only and start A2DP when asked or when Bluetooth audio is chosen on the radio. OpenHU asks for A2DP (BlueZ `ConnectProfile`) every 5 s and switches a card that came up with a headset profile to A2DP; it keeps looking while the radio is connected. The log shows what the audio server offers: `[OutputRouter] <address>: card …, profile …, A2DP profile …, sink …`. If no card appears, A2DP is not available in the audio server: PipeWire needs its Bluetooth support (Debian `libspa-0.2-bluetooth`, `wireplumber`), PulseAudio `pulseaudio-module-bluetooth`; `pactl list short sinks` must list `bluez_output…` |
+| Radio connected, sound stays on the old output | OpenHU makes the radio's sink the default and moves the streams that played on the old default (and its own Android Auto streams) to it; the log shows `[OutputRouter] output …` and `… stream(s) to …`. Streams on another output, chosen there on purpose, stay |
 | Radio not found by the search | radio not in pairing mode, or it only shows up with its address (no name yet): search again |
 | Old radio rejects pairing | it wants a PIN: set "Kopplungs-PIN" (often `0000` or `1234`) |
 | Buttons do nothing | the radio needs AVRCP; the log shows `[CarAudio] radio button: …` for every press that arrives |
+| Calls end by themselves | the radio's pause/stop ends a call only once it lasted 5 s (radios send them when they switch to their phone source); the log shows `[CarAudio] radio button: … -> ignored: …` or `-> call.end` |
 
-When OpenHU stops or the radio disconnects, the previous default output is restored.
+When OpenHU stops, the radio disconnects or car audio is switched off, the previous default output is restored and the moved streams go back. Switching car audio off does not disconnect the device.
 
 ## Settings and plugins
 

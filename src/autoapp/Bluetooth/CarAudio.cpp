@@ -16,30 +16,16 @@
 */
 
 
-#include <QProcess>
-#include <f1x/openauto/autoapp/Core/ChildProcesses.hpp>
 #include <f1x/openauto/autoapp/Audio/VolumeController.hpp>
 #include <f1x/openauto/autoapp/Bluetooth/BluetoothManager.hpp>
 #include <f1x/openauto/autoapp/Bluetooth/CarAudio.hpp>
 #include <f1x/openauto/autoapp/Core/EventBus.hpp>
 #include <f1x/openauto/autoapp/Input/ActionDispatcher.hpp>
+#include <f1x/openauto/autoapp/Wireless/Bluez.hpp>
 #include <f1x/openauto/Common/Log.hpp>
 
 namespace f1x::openauto::autoapp::bt
 {
-
-namespace
-{
-
-QString pactl(const QStringList& arguments)
-{
-    QProcess process;
-    core::startChild(process, "pactl", arguments);
-    process.waitForFinished(3000);
-    return QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
-}
-
-}
 
 CarAudio::CarAudio(configuration::IConfiguration::Pointer configuration, BluetoothManager& bluetooth,
                    input::ActionDispatcher& actions, audio::VolumeController& volume, QObject* parent)
@@ -58,6 +44,21 @@ CarAudio::CarAudio(configuration::IConfiguration::Pointer configuration, Bluetoo
         }
     });
     connect(&player_, &MediaPlayer::command, this, &CarAudio::onCommand);
+    clock_.start();
+    connect(&router_, &audio::OutputRouter::routed, this, [this](const QString& sink) {
+        if(!connected_)
+        {
+            return;  // disconnected meanwhile: restore() follows
+        }
+        sinkTimer_.stop();
+        sinkTimer_.setInterval(1000);
+        sink_ = sink;
+        OPENAUTO_LOG(info) << "[CarAudio] output " << sink_.toStdString();
+        volume_.refresh();
+        error_.clear();
+        this->publish();
+    });
+    connect(&router_, &audio::OutputRouter::restored, this, [this]() { volume_.refresh(); });
 
     sinkTimer_.setInterval(1000);
     connect(&sinkTimer_, &QTimer::timeout, this, &CarAudio::findSink);
@@ -68,6 +69,7 @@ CarAudio::CarAudio(configuration::IConfiguration::Pointer configuration, Bluetoo
         const auto settings = configuration_->getCarAudioSettings();
         if(running_ && !connected_ && !settings.device.empty())
         {
+            router_.rememberDefault();
             bluetooth_.connectDevice(QString::fromStdString(settings.device));
         }
     });
@@ -84,6 +86,7 @@ CarAudio::CarAudio(configuration::IConfiguration::Pointer configuration, Bluetoo
         else if(topic == "phone.status")
         {
             callState_ = data.value("callState").toString();
+            callButtons_.setCallState(callState_, clock_.elapsed());
             call_ = data.value("calls").toList().value(0).toMap();
         }
         else
@@ -105,7 +108,7 @@ void CarAudio::apply()
     // no adapter (removed, or not there at all): off until one is plugged in (presenceChanged)
     if(!settings.enabled || settings.device.empty() || !bluetooth_.present())
     {
-        this->stop();
+        this->halt(false);
         this->publish();
         return;
     }
@@ -118,6 +121,10 @@ void CarAudio::apply()
 
     running_ = true;
     error_.clear();
+    if(!connected_)
+    {
+        router_.rememberDefault();
+    }
     const QString registerError = player_.registerAt(bluetooth_.adapterPath());
     if(!registerError.isEmpty())
     {
@@ -141,6 +148,11 @@ void CarAudio::apply()
 
 void CarAudio::stop()
 {
+    this->halt(true);
+}
+
+void CarAudio::halt(bool blocking)
+{
     if(!running_)
     {
         return;
@@ -149,10 +161,20 @@ void CarAudio::stop()
     reconnectTimer_.stop();
     sinkTimer_.stop();
     player_.unregister();
+    // the device stays connected (headphones, a phone call through the radio): it is only no longer the output
     if(connected_)
     {
-        bluetooth_.disconnectDevice(QString::fromStdString(configuration_->getCarAudioSettings().device));
-        this->onDisconnected();
+        connected_ = false;
+        sink_.clear();
+        OPENAUTO_LOG(info) << "[CarAudio] radio no longer the output";
+    }
+    if(blocking)
+    {
+        router_.restoreNow();
+    }
+    else
+    {
+        router_.restore();
     }
 }
 
@@ -165,7 +187,7 @@ void CarAudio::selectDevice(const QString& address)
     settings.enabled = true;
     configuration_->setCarAudioSettings(settings);
     configuration_->save();
-    this->stop();
+    this->halt(false);
     this->apply();
 }
 
@@ -173,7 +195,7 @@ void CarAudio::forgetDevice()
 {
     auto settings = configuration_->getCarAudioSettings();
     const QString address = QString::fromStdString(settings.device);
-    this->stop();
+    this->halt(false);
     settings.device.clear();
     settings.enabled = false;
     configuration_->setCarAudioSettings(settings);
@@ -206,104 +228,72 @@ void CarAudio::onDevicesChanged()
 void CarAudio::onConnected()
 {
     connected_ = true;
-    OPENAUTO_LOG(info) << "[CarAudio] radio connected";
+    const QString address = QString::fromStdString(configuration_->getCarAudioSettings().device);
+    OPENAUTO_LOG(info) << "[CarAudio] radio connected, profiles: "
+                       << bluetooth_.device(address).value("uuids").toStringList().join(' ').toStdString();
     sinkAttempts_ = 0;
+    sinkTimer_.setInterval(1000);
     sinkTimer_.start();
+    // car radios often connect hands-free (HFP) only and A2DP when asked for it (or when Bluetooth audio is chosen
+    // on the radio): without A2DP there is no sink for the music (#112)
+    this->requestA2dp();
     this->findSink();
     this->publish();
 }
 
-void CarAudio::onDisconnected()
+void CarAudio::onDisconnected(bool blocking)
 {
     connected_ = false;
     sinkTimer_.stop();
     OPENAUTO_LOG(info) << "[CarAudio] radio disconnected";
-    this->restoreSink();
+    sink_.clear();
+    if(blocking)
+    {
+        router_.restoreNow();
+    }
+    else
+    {
+        router_.restore();
+    }
     this->publish();
+}
+
+void CarAudio::requestA2dp()
+{
+    const QString address = QString::fromStdString(configuration_->getCarAudioSettings().device);
+    OPENAUTO_LOG(info) << "[CarAudio] asking " << address.toStdString() << " for A2DP";
+    bluetooth_.connectProfile(address, wireless::bluez::cAudioSinkUuid);
 }
 
 void CarAudio::findSink()
 {
-    // PipeWire: bluez_output.E8:78:29:C0:E5:2D (older: bluez_output.E8_78_29_C0_E5_2D.1),
-    // PulseAudio: bluez_sink.E8_78_29_C0_E5_2D.a2dp_sink
-    const QString id = QString::fromStdString(configuration_->getCarAudioSettings().device).toUpper().replace(':', '_');
-    for(const QString& line: pactl({"list", "short", "sinks"}).split('\n', Qt::SkipEmptyParts))
+    // the A2DP profile and the sink: OutputRouter (in the background, routed() when done)
+    router_.route(QString::fromStdString(configuration_->getCarAudioSettings().device));
+    ++sinkAttempts_;
+    if(sinkAttempts_ % 5 == 0)
     {
-        const QString name = line.section('\t', 1, 1);
-        if(name.startsWith("bluez") && name.toUpper().replace(':', '_').contains(id))
-        {
-            sinkTimer_.stop();
-            if(name != sink_)
-            {
-                const QString current = pactl({"get-default-sink"});
-                if(!current.startsWith("bluez"))
-                {
-                    previousSink_ = current;
-                }
-                sink_ = name;
-                pactl({"set-default-sink", sink_});
-                OPENAUTO_LOG(info) << "[CarAudio] output " << sink_.toStdString();
-                volume_.refresh();
-                error_.clear();
-                this->publish();
-            }
-            return;
-        }
+        this->requestA2dp();
     }
-    if(++sinkAttempts_ >= 20)
+    if(sinkAttempts_ == 20)
     {
-        sinkTimer_.stop();
+        // shown, but the radio may still start A2DP (Bluetooth audio chosen on it): keep looking while it is
+        // connected, less often
         error_ = qtTrId("caraudio.connected_but_no_audio");
-        OPENAUTO_LOG(warning) << "[CarAudio] no sink for the radio";
+        OPENAUTO_LOG(warning) << "[CarAudio] no sink for the radio yet, still trying";
+        sinkTimer_.setInterval(5000);
         this->publish();
     }
 }
 
-void CarAudio::restoreSink()
-{
-    if(sink_.isEmpty())
-    {
-        return;
-    }
-    if(!previousSink_.isEmpty() && pactl({"get-default-sink"}) == sink_)
-    {
-        pactl({"set-default-sink", previousSink_});
-        volume_.refresh();
-    }
-    sink_.clear();
-}
-
 void CarAudio::onCommand(const QString& name)
 {
-    OPENAUTO_LOG(info) << "[CarAudio] radio button: " << name.toStdString() << " (call: " << callState_.toStdString() << ")";
-    const bool toggle = name == "play" || name == "pause" || name == "playpause" || name == "stop";
-    if(toggle && callState_ == "incoming")
+    const auto decision = callButtons_.decide(name, clock_.elapsed());
+    OPENAUTO_LOG(info) << "[CarAudio] radio button: " << name.toStdString() << " (call: " << callState_.toStdString()
+                       << ") -> " << (decision.action.isEmpty() ? std::string("ignored") : decision.action.toStdString())
+                       << (decision.reason.isEmpty() ? std::string() : ": " + decision.reason.toStdString());
+    if(!decision.action.isEmpty())
     {
-        actions_.trigger("call.answer");
-    }
-    else if(toggle && (callState_ == "in_call" || callState_ == "on_hold"))
-    {
-        actions_.trigger("call.end");
-    }
-    else if(name == "next")
-    {
-        actions_.trigger("media.next");
-    }
-    else if(name == "previous")
-    {
-        actions_.trigger("media.previous");
-    }
-    else if(name == "play")
-    {
-        actions_.trigger("media.play");
-    }
-    else if(name == "pause" || name == "stop")
-    {
-        actions_.trigger("media.pause");
-    }
-    else
-    {
-        actions_.trigger("media.play_pause");
+        actions_.trigger(decision.action);
     }
 }
 

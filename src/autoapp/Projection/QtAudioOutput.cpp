@@ -64,7 +64,11 @@ void QtAudioOutput::createAudioOutput()
 {
     OPENAUTO_LOG(info) << "[QtAudioOutput] createAudioOutput()";
     std::lock_guard<std::mutex> lock(outputMutex_);
-    audioOutput_ = std::make_unique<QAudioSink>(QMediaDevices::defaultAudioOutput(), audioFormat_);
+    // QAudioSink is opened on a device, not on "the default". With PipeWire 1.4 its stream followed a new default
+    // all the same, but a new stream is opened on the default of that moment (onStartPlayback) so that it does not
+    // depend on that (Bluetooth car radio, #112; OutputRouter moves the playing ones).
+    device_ = QMediaDevices::defaultAudioOutput();
+    audioOutput_ = std::make_unique<QAudioSink>(device_, audioFormat_);
 }
 
 bool QtAudioOutput::open()
@@ -179,6 +183,13 @@ void QtAudioOutput::onStartPlayback()
     std::lock_guard<std::mutex> lock(outputMutex_);
     if(!playbackStarted_)
     {
+        const QAudioDevice device = QMediaDevices::defaultAudioOutput();
+        if(!device.isNull() && device.id() != device_.id())
+        {
+            OPENAUTO_LOG(info) << "[QtAudioOutput] " << name_ << ": default output now " << device.id().toStdString();
+            device_ = device;
+            audioOutput_ = std::make_unique<QAudioSink>(device_, audioFormat_);
+        }
         audioBuffer_ = audioOutput_->start();
         playbackStarted_ = true;
     }

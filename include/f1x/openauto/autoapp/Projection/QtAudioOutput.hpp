@@ -69,6 +69,8 @@ private:
     std::mutex outputMutex_;
     QIODevice * audioBuffer_;
     std::unique_ptr<QAudioSink> audioOutput_;
+    // the device audioOutput_ plays on (the default when it was created)
+    QAudioDevice device_;
     bool playbackStarted_;
     std::atomic<uint64_t> droppedPackets_{0};
 
