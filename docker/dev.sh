@@ -19,10 +19,24 @@ set -euo pipefail
 
 DOCKER_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(dirname "$DOCKER_DIR")"
-# aasdk source (default: aasdk-ref or aasdk next to this repository; a missing one would become an empty folder)
+# aasdk source (default: aasdk-ref or aasdk next to this repository; in a git worktree next to the main checkout).
+# Docker would mount a missing one as an empty folder (owned by root), so it has to contain CMakeLists.txt.
 if [ -z "${AASDK_DIR:-}" ]; then
-  AASDK_DIR="$(dirname "$REPO")/aasdk-ref"
-  [ -f "$AASDK_DIR/CMakeLists.txt" ] || AASDK_DIR="$(dirname "$REPO")/aasdk"
+  main_repo="$REPO"
+  common_dir="$(git -C "$REPO" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  [ -n "$common_dir" ] && main_repo="$(dirname "$common_dir")"
+  for candidate in "$(dirname "$REPO")/aasdk-ref" "$(dirname "$REPO")/aasdk" \
+                   "$(dirname "$main_repo")/aasdk-ref" "$(dirname "$main_repo")/aasdk"; do
+    if [ -f "$candidate/CMakeLists.txt" ]; then
+      AASDK_DIR="$candidate"
+      break
+    fi
+  done
+fi
+if [ ! -f "${AASDK_DIR:-}/CMakeLists.txt" ]; then
+  echo "aasdk source not found (looked next to this repository and next to the main checkout)." >&2
+  echo "Set AASDK_DIR=/path/to/aasdk." >&2
+  exit 1
 fi
 IMAGE="openhu:dev"
 
