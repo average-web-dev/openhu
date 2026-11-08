@@ -827,6 +827,22 @@
         <source></source>
         <translation>Not synchronized yet – needs an internet connection.</translation>
     </message>
+    <message id="settings.system.time_source_rtc">
+        <source></source>
+        <translation>Current time from the hardware clock.</translation>
+    </message>
+    <message id="settings.system.time_source_saved">
+        <source></source>
+        <translation>Current time from the last shutdown: behind by the time the system was off.</translation>
+    </message>
+    <message id="settings.system.time_source_build">
+        <source></source>
+        <translation>Current time is the system&apos;s build date – probably wrong.</translation>
+    </message>
+    <message id="settings.system.time_source_manual">
+        <source></source>
+        <translation>Current time set by hand.</translation>
+    </message>
     <message id="settings.system.boot_updated">
         <source></source>
         <translation>Update to %1 installed.</translation>

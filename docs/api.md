@@ -102,7 +102,7 @@ networks you trust.
 | `settings.changed` | `key`, `value` (not for passwords), `pending` (`reconnect`, `restart`) – a setting was changed (settings page or `settings.set`) |
 | `system.ssh` | OpenHU OS only: `enabled`, `running`, `password` (set), `keys`, `busy`, `addresses` |
 | `system.ethernet` | OpenHU OS only: `mode` (`client`, `server`), `address` (of OpenHU as the server, `10.42.1.1`), `serverAllowed` (false while another DHCP server gave a port an address), `devices` (`interface`, `state`: `connected`, `connecting`, `no-cable`, `disconnected`; `address`, `lease`, `dhcpServer`), `clients` (server: `ip`, `mac`, `name`), `busy` |
-| `system.time` | OpenHU OS only: `zone` (`Europe/Berlin`, `UTC`), `offset` (seconds east of UTC), `ntp` (time from the internet), `synchronized`, `time` (seconds since 1970), `busy` |
+| `system.time` | OpenHU OS only: `zone` (`Europe/Berlin`, `UTC`), `offset` (seconds east of UTC), `ntp` (time from the internet), `synchronized`, `time` (seconds since 1970), `rtc` (a hardware clock exists), `source` (where the clock came from: `ntp`, `rtc`, `saved` = the time saved at the last shutdown, `build` = the image's build time, `manual`), `busy` |
 
 Plugins publish their own topics with `bus.publish` (e.g. `vehicle.speed`).
 

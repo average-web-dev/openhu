@@ -74,10 +74,22 @@ Flickable {
              : page.cityOf(page.timeInfo.zone) + " (" + page.offsetText(page.timeInfo.offset || 0) + ")"
     }
     function ntpText() {
-        if (!page.timeInfo.ntp)
-            return qsTrId("settings.system.off_set_date_time")
-        return page.timeInfo.synchronized ? qsTrId("settings.system.synchronized_time_server")
-                                          : qsTrId("settings.system.not_synchronized_yet_needs")
+        if (page.timeInfo.ntp && page.timeInfo.synchronized)
+            return qsTrId("settings.system.synchronized_time_server")
+        const text = page.timeInfo.ntp ? qsTrId("settings.system.not_synchronized_yet_needs")
+                                       : qsTrId("settings.system.off_set_date_time")
+        const source = page.sourceText()
+        return source ? text + " " + source : text
+    }
+    // where the clock came from without a time server (OpenHU OS: openhu-time status)
+    function sourceText() {
+        switch (page.timeInfo.source) {
+        case "rtc": return qsTrId("settings.system.time_source_rtc")
+        case "saved": return qsTrId("settings.system.time_source_saved")
+        case "build": return qsTrId("settings.system.time_source_build")
+        case "manual": return qsTrId("settings.system.time_source_manual")
+        default: return ""
+        }
     }
     // the date and time pickers start at the current time
     function loadNow() {
