@@ -172,11 +172,10 @@ int main(int argc, char* argv[])
     startUSBWorkers(ioService, usbContext, threadPool);
     startIOServiceWorkers(ioService, threadPool);
 
-    // Dark Material style for Qt Quick Controls in the shell and plugin pages
-    qputenv("QT_QUICK_CONTROLS_STYLE", "Material");
-    qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", "Dark");
-    qputenv("QT_QUICK_CONTROLS_MATERIAL_ACCENT", "#4f9cf9");
-    qputenv("QT_QUICK_CONTROLS_MATERIAL_BACKGROUND", "#192027");
+    // Dark Material style for Qt Quick Controls in the shell and plugin pages, its sizes scaled with the display
+    // (OpenHUStyle derives from Material, found in qrc:/shell/qml/style, Shell/qml/style/OpenHUStyle/README.md)
+    qputenv("QT_QUICK_CONTROLS_STYLE", "OpenHUStyle");
+    // its colours are set on the window (Main.qml)
 
     // On-screen keyboard for text fields (Qt Virtual Keyboard, Keyboard.qml); a real keyboard keeps working with it.
     // Not when another input method was chosen or the plugin is missing (the shell loads without the panel then).
@@ -321,6 +320,7 @@ int main(int argc, char* argv[])
     QObject::connect(&pluginManager, &autoapp::plugins::PluginManager::pluginsChanged,
                      &translations, &autoapp::shell::Translations::reload);
 
+    engine.addImportPath(QStringLiteral("qrc:/shell/qml/style"));
     // QML module for the shell and plugin pages: import OpenHU 1.0
     qmlRegisterType<autoapp::shell::AaSurface>("OpenHU", 1, 0, "AaSurface");
     qmlRegisterSingletonType(QUrl("qrc:/shell/qml/module/Theme.qml"), "OpenHU", 1, 0, "Theme");
