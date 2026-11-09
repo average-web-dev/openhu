@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include <QHash>
 #include <QObject>
 #include <QStringList>
@@ -59,6 +61,9 @@ public:
     // Built-in actions with a short description.
     static QVariantMap actions();
 
+    // aa.reconnect: ends a wireless (TCP) session, true when there was one; otherwise the phones on USB are reset
+    void setNetworkSessionEnder(std::function<bool()> ender) { networkSessionEnder_ = std::move(ender); }
+
     // Keyboard -> actions according to the key map (defaults + ~/.openhu/keymap.json).
     void installKeyboardHandler();
     QVariantMap keymap() const;
@@ -92,6 +97,7 @@ private:
     QHash<int, QString> keymap_;
     QVariantMap overrides_;  // differences to the defaults, "" removes a default key
     bool capturing_ = false;
+    std::function<bool()> networkSessionEnder_;
 };
 
 }

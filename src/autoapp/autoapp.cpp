@@ -226,6 +226,7 @@ int main(int argc, char* argv[])
     // media.current: what plays now (home page, Bluetooth car audio)
     autoapp::service::NowPlaying nowPlaying;
     autoapp::input::ActionDispatcher actionDispatcher(volumeController, shellController);
+    actionDispatcher.setNetworkSessionEnder([app]() { return app->endNetworkSession(); });
 
     // WebSocket API for external tools and plugins (docs/api.md)
     autoapp::api::ApiServer apiServer;
