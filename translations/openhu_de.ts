@@ -827,6 +827,22 @@
         <source></source>
         <translation>Noch nicht abgeglichen – braucht eine Internetverbindung.</translation>
     </message>
+    <message id="settings.system.time_source_rtc">
+        <source></source>
+        <translation>Aktuelle Zeit aus der Hardware-Uhr.</translation>
+    </message>
+    <message id="settings.system.time_source_saved">
+        <source></source>
+        <translation>Aktuelle Zeit vom letzten Herunterfahren: geht um die Zeit nach, in der das System aus war.</translation>
+    </message>
+    <message id="settings.system.time_source_build">
+        <source></source>
+        <translation>Aktuelle Zeit ist das Erstelldatum des Systems – wahrscheinlich falsch.</translation>
+    </message>
+    <message id="settings.system.time_source_manual">
+        <source></source>
+        <translation>Aktuelle Zeit von Hand eingestellt.</translation>
+    </message>
     <message id="settings.system.boot_updated">
         <source></source>
         <translation>Update auf %1 installiert.</translation>
