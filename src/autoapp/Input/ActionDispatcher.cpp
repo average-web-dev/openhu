@@ -205,7 +205,12 @@ bool ActionDispatcher::trigger(const QString& action, Phase phase)
 
     if(action == QLatin1String("aa.reconnect"))
     {
-        if(once)
+        if(once && networkSessionEnder_ && networkSessionEnder_())
+        {
+            // a wireless session: the phone comes back over Bluetooth and WiFi (WirelessController)
+            shell_.toast(qtTrId("actions.reconnecting_phone"), 3000);
+        }
+        else if(once)
         {
             const auto devices = core::resetAndroidUsbDevices();
             shell_.toast(devices.isEmpty() ? qtTrId("actions.no_phone_found_usb") : qtTrId("actions.reconnecting_phone"), 3000);

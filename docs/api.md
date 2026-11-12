@@ -351,7 +351,7 @@ Steering wheel buttons, CAN, GPIO and keyboard all end up as actions (`input.act
 | `volume.up`, `volume.down` (±5 %), `volume.mute` | system volume |
 | `ui.home`, `ui.aa`, `ui.settings` | shell pages |
 | `ui.back` | back inside Android Auto while it is shown, otherwise to the home page |
-| `aa.reconnect` | USB reset of the phone (also: tap on the phone icon in the status bar) |
+| `aa.reconnect` | Reconnects the phone: a wireless session is ended and comes back over Bluetooth/WiFi, otherwise USB reset (also: tap on the phone icon in the status bar) |
 
 Any other name is published as `input.action` only, so plugins can define actions (e.g. `camera.toggle`).
 For long presses send `press` and `release` separately.

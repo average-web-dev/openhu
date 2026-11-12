@@ -57,6 +57,10 @@ public:
     void pause();
     void resume();
     void onAndroidAutoQuit() override;
+    // Ends a session over TCP (wireless or the head unit server) so that it starts again: the wireless controller
+    // brings the phone back over Bluetooth, the head unit server is connected again after 3 s. False when there is
+    // none (a USB session is restarted by a USB reset instead). Any thread.
+    bool endNetworkSession();
     bool disableAutostartEntity = false;
     // Wireless.Priority: true = USB session wins over wireless, false = wireless replaces the USB session
     void setPreferUsb(bool value) { preferUsb_ = value; }
@@ -97,6 +101,8 @@ private:
     aasdk::usb::IUSBHub::Pointer usbHub_;
     aasdk::usb::IConnectedAccessoriesEnumerator::Pointer connectedAccessoriesEnumerator_;
     boost::asio::ip::tcp::acceptor acceptor_;
+    // a session over TCP runs (read by endNetworkSession from other threads)
+    std::atomic<bool> networkSession_{false};
     service::IAndroidAutoEntity::Pointer androidAutoEntity_;
     bool isStopped_;
     // the running session uses the cable

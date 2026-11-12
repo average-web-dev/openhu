@@ -1473,7 +1473,7 @@
     </message>
     <message id="actions.reconnect_phone_usb_reset">
         <source></source>
-        <translation>Telefon per USB-Reset neu verbinden</translation>
+        <translation>Telefon neu verbinden (neue kabellose Sitzung oder USB-Reset)</translation>
     </message>
     <message id="actions.no_phone_found_usb">
         <source></source>

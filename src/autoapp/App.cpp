@@ -98,6 +98,7 @@ namespace f1x::openauto::autoapp {
         auto tcpEndpoint(std::make_shared<aasdk::tcp::TCPEndpoint>(tcpWrapper_, std::move(socket)));
         androidAutoEntity_ = androidAutoEntityFactory_.create(std::move(tcpEndpoint));
         usbSession_ = false;
+        networkSession_ = true;
         core::EventBus::instance().publish("projection.transport", {{"transport", "wifi"}});
         androidAutoEntity_->start(*this);
       }
@@ -113,6 +114,7 @@ namespace f1x::openauto::autoapp {
   void App::stop() {
     strand_.dispatch([this, self = this->shared_from_this()]() {
       isStopped_ = true;
+      networkSession_ = false;
       boost::system::error_code ec;
       usbRetryTimer_.cancel(ec);
       usbReportTimer_.cancel(ec);
@@ -173,6 +175,7 @@ namespace f1x::openauto::autoapp {
         auto aoapDevice(aasdk::usb::AOAPDevice::create(usbWrapper_, ioService_, deviceHandle));
         androidAutoEntity_ = androidAutoEntityFactory_.create(std::move(aoapDevice));
         usbSession_ = true;
+        networkSession_ = false;
         core::EventBus::instance().publish("projection.transport", {{"transport", "usb"}});
         androidAutoEntity_->start(*this);
       } else {
@@ -297,9 +300,19 @@ namespace f1x::openauto::autoapp {
     });
   }
 
+  bool App::endNetworkSession() {
+    if (!networkSession_.exchange(false)) {
+      return false;
+    }
+    OPENAUTO_LOG(info) << "[App] ending the network session to reconnect";
+    this->onAndroidAutoQuit();
+    return true;
+  }
+
   void App::onAndroidAutoQuit() {
     strand_.dispatch([this, self = this->shared_from_this()]() {
       OPENAUTO_LOG(info) << "[App] onAndroidAutoQuit()";
+      networkSession_ = false;
 
       //acceptor_.close();
 

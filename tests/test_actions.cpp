@@ -48,6 +48,34 @@ private slots:
         QCOMPARE(navigate.at(2).at(0).toString(), QString("home"));
     }
 
+    // aa.reconnect: a wireless session is ended (the phone comes back by itself), no USB reset then
+    void reconnectEndsWirelessSession()
+    {
+        TestHome home;
+        VolumeController volume;
+        ShellController shell;
+        ActionDispatcher actions(volume, shell);
+        QSignalSpy toasts(&shell, &ShellController::toastRequested);
+        int ended = 0;
+        bool wireless = true;
+        actions.setNetworkSessionEnder([&]() {
+            ++ended;
+            return wireless;
+        });
+
+        QVERIFY(actions.trigger("aa.reconnect", "press"));
+        QVERIFY(actions.trigger("aa.reconnect", "release"));
+        QCOMPARE(ended, 1);
+        QCOMPARE(toasts.count(), 1);
+        QCOMPARE(toasts.at(0).at(0).toString(), qtTrId("actions.reconnecting_phone"));
+
+        // no wireless session: the phones on USB are reset (none in the test)
+        wireless = false;
+        QVERIFY(actions.trigger("aa.reconnect"));
+        QCOMPARE(ended, 2);
+        QCOMPARE(toasts.count(), 2);
+    }
+
     void everyActionIsPublished()
     {
         TestHome home;

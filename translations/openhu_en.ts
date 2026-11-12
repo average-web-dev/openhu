@@ -1473,7 +1473,7 @@
     </message>
     <message id="actions.reconnect_phone_usb_reset">
         <source></source>
-        <translation>Reconnect the phone by USB reset</translation>
+        <translation>Reconnect the phone (new wireless session or USB reset)</translation>
     </message>
     <message id="actions.no_phone_found_usb">
         <source></source>
