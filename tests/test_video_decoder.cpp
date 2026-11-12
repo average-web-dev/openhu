@@ -391,6 +391,31 @@ private slots:
         QVERIFY(!output.offerH265());
     }
 
+    // auto: H.265 above 1080p (the phone streams 1440p and 4K only in H.265), H.264 up to 1080p
+    void autoOffersH265Above1080p()
+    {
+        using aap_protobuf::service::media::sink::message::VideoCodecResolutionType;
+        TestHome home;
+        auto configuration = std::make_shared<Configuration>();
+        configuration->setVideoCodec("auto");
+        configuration->setVideoResolutionAuto(false);
+        QVideoSink sink;
+        FfmpegVideoOutput output(configuration, &sink);
+        const std::pair<VideoCodecResolutionType, bool> cases[] = {
+            {VideoCodecResolutionType::VIDEO_1920x1080, false}, {VideoCodecResolutionType::VIDEO_1080x1920, false},
+            {VideoCodecResolutionType::VIDEO_2560x1440, true},  {VideoCodecResolutionType::VIDEO_1440x2560, true},
+            {VideoCodecResolutionType::VIDEO_3840x2160, true}};
+        for(const auto& [resolution, h265]: cases)
+        {
+            configuration->setVideoResolution(resolution);
+            f1x::openauto::autoapp::shell::AaBridge::instance().configure(configuration);
+            QCOMPARE(output.offerH265(), h265);
+        }
+        // a codec set by hand wins
+        configuration->setVideoCodec("h264");
+        QVERIFY(!output.offerH265());
+    }
+
     // EAGAIN from avcodec_send_packet: the packet is sent again, every picture is decoded
     void eagainSendsThePacketAgain()
     {

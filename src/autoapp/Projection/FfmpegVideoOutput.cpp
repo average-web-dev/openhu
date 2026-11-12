@@ -453,8 +453,25 @@ void FfmpegVideoOutput::setCodec(aap_protobuf::service::media::shared::message::
 
 bool FfmpegVideoOutput::offerH265() const
 {
-    // auto stays H.264 until the Raspberry Pi 5 (hardware HEVC, no hardware H.264) is measured (#10)
-    return configuration_->getVideoCodec() == "h265";
+    const std::string codec = configuration_->getVideoCodec();
+    if(codec != "auto")
+    {
+        return codec == "h265";
+    }
+    // Above 1080p the phone only streams H.265: offered H.264 alone, it ends the session about 3 s after the video
+    // setup, before the first picture, and reconnects again and again (Fairphone 4, 2560x1440). Up to 1080p auto
+    // stays H.264 until the Raspberry Pi 5 (hardware HEVC, no hardware H.264) is measured (#10).
+    using aap_protobuf::service::media::sink::message::VideoCodecResolutionType;
+    switch(this->getVideoResolution())
+    {
+    case VideoCodecResolutionType::VIDEO_2560x1440:
+    case VideoCodecResolutionType::VIDEO_3840x2160:
+    case VideoCodecResolutionType::VIDEO_1440x2560:
+    case VideoCodecResolutionType::VIDEO_2160x3840:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool FfmpegVideoOutput::openDecoder(const std::string& name)
