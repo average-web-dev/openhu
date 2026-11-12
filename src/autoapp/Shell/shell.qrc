@@ -1,6 +1,16 @@
 <RCC>
     <qresource prefix="/shell">
         <file>qml/module/Theme.qml</file>
+        <file>qml/style/OpenHUStyle/qmldir</file>
+        <file>qml/style/OpenHUStyle/Button.qml</file>
+        <file>qml/style/OpenHUStyle/TabButton.qml</file>
+        <file>qml/style/OpenHUStyle/Switch.qml</file>
+        <file>qml/style/OpenHUStyle/TextField.qml</file>
+        <file>qml/style/OpenHUStyle/SpinBox.qml</file>
+        <file>qml/style/OpenHUStyle/ComboBox.qml</file>
+        <file>qml/style/OpenHUStyle/MenuItem.qml</file>
+        <file>qml/style/OpenHUStyle/ItemDelegate.qml</file>
+        <file>qml/style/OpenHUStyle/Slider.qml</file>
         <file>qml/Main.qml</file>
         <file>qml/Keyboard.qml</file>
         <file>qml/Dock.qml</file>

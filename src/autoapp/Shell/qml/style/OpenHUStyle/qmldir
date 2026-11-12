@@ -1,0 +1,11 @@
+module OpenHUStyle
+import QtQuick.Controls.Material
+Button 6.0 Button.qml
+TabButton 6.0 TabButton.qml
+Switch 6.0 Switch.qml
+TextField 6.0 TextField.qml
+SpinBox 6.0 SpinBox.qml
+ComboBox 6.0 ComboBox.qml
+MenuItem 6.0 MenuItem.qml
+ItemDelegate 6.0 ItemDelegate.qml
+Slider 6.0 Slider.qml

@@ -1,15 +1,24 @@
 import QtQuick
 import OpenHU 1.0
+import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Window
 import QtQuick.Layouts
 import "."
 import "settings"
 
-Window {
+// ApplicationWindow: its font reaches every control (shell and plugin pages), scaled like the rest (style/OpenHUStyle)
+ApplicationWindow {
     id: root
     visible: true
     title: "OpenHU"
     color: Theme.background
+    // Material's text size (14 px, editors 16 px: style/OpenHUStyle) and colours; Material sets them only for the style
+    // named "Material" (also its QT_QUICK_CONTROLS_MATERIAL_* variables)
+    font.pixelSize: Math.round(14 * Theme.scale)
+    Material.theme: Material.Dark
+    Material.accent: "#4f9cf9"
+    Material.background: "#192027"
 
     // "home" | "aa" | "settings" | "plugin:<id>"
     property string page: "home"
